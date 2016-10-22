@@ -15,9 +15,8 @@ namespace RestaurantBot
         public DateTime Date { get; set; }
         // Don't forget to make datetime nullable if it's optional!
         [Prompt("What is your preferred time?")]
-        [Optional]
-        //[Template(TemplateUsage.StatusFormat, "{&}: {:t}", FieldCase = CaseNormalization.None)]
-        public DateTime? Time { get; set; }
+        //[Optional]
+        public DateTime Time { get; set; }
         [Prompt("Your name?")]
         public string Name { get; set; }
         [Prompt("How many people will there be?")]
@@ -31,11 +30,29 @@ namespace RestaurantBot
         {
             return new FormBuilder<BookingForm>()
                 .Field(nameof(Date))
-                .Field(nameof(Time), active: IsTimeAdded)
+                .Field(nameof(Time), active: IsTimeAdded, validate: ValidateTime)
                 .AddRemainingFields()
                 .Field(nameof(PhNum), validate: ValidatePhNum)
-                .Confirm("Confirm booking for {NumPeople} people on {Date}? (Y/N)")
+                .Confirm("Confirm booking on {Date:d} at {Time:t}? (Y/N)")
                 .Build();
+        }
+        private static Task<ValidateResult> ValidateTime(BookingForm state, object response)
+        {
+            var result = new ValidateResult();
+            var dt = (DateTime)response;
+            // Do the checks here whether the time is available. 
+            // Hard coded for demo purposes
+            if (dt.ToString("HH:mm") == "20:30")
+            {
+                // If time not available
+                result.IsValid = false;
+                result.Feedback = "Sorry, that time is not available! Times that are available are: 6.30pm, 7.00pm, 8.00pm, 9.00pm";
+            } else
+            {
+                result.IsValid = true;
+                result.Value = response;
+            }
+            return Task.FromResult(result);
         }
         private static bool IsTimeAdded(BookingForm state)
         {

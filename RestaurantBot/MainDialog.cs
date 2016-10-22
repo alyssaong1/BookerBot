@@ -6,6 +6,7 @@ using Microsoft.Bot.Connector;
 using RestaurantBot.Models;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
@@ -115,20 +116,37 @@ namespace RestaurantBot
                 //var dateResult = parser.Parse(date.Entity);
                 EntityRecommendation entityDate;
                 EntityRecommendation entityTime;
-                EntityRecommendation entityNumPpl;
-                result.TryFindEntity("numppl", out entityNumPpl);
+ 
                 result.TryFindEntity("builtin.datetime.date", out entityDate);
                 result.TryFindEntity("builtin.datetime.time", out entityTime);
 
+                //if (entityDate != null)
+                //{
+                //    if (HasExplicitTime(entityDate.Entity)) // User stated date and time
+                //    {
+                //        entities.Add(new EntityRecommendation(type: "Date") { Entity = entityDate.Entity.Replace(". ", ".") });
+                //    } else // User only stated date
+                //    {
+                //        entities.Add(new EntityRecommendation(type: "Date") { Entity = entityDate.Entity });
+                //    }
+                //} else if (entityTime != null)
+                //{
+                //    entities.Add(new EntityRecommendation(type: "Time") { Entity = entityTime.Entity });
+                //}
+
                 if ((entityDate != null) & (entityTime != null))
-                    entities.Add(new EntityRecommendation(type: "Date") { Entity = entityDate.Entity + " " + entityTime.Entity });
-
-                else if (entityDate != null)
+                {
                     entities.Add(new EntityRecommendation(type: "Date") { Entity = entityDate.Entity });
-
+                    entities.Add(new EntityRecommendation(type: "Time") { Entity = entityTime.Resolution["time"].Substring(1) });
+                }
+                else if (entityDate != null)
+                {
+                    entities.Add(new EntityRecommendation(type: "Date") { Entity = entityDate.Entity });
+                }
                 else if (entityTime != null)
+                { 
                     entities.Add(new EntityRecommendation(type: "Time") { Entity = entityTime.Entity });
-
+                }
                 await context.PostAsync("Sure thing - I'll need some details from you.");
                 var bookingForm = new FormDialog<BookingForm>(new BookingForm(), BookingForm.BuildForm, FormOptions.PromptInStart, entities);
                 context.Call(bookingForm, BookingFormComplete);
@@ -139,6 +157,20 @@ namespace RestaurantBot
                 context.Wait(MessageReceived);
             }
         }
+        //private Boolean HasExplicitTime(string inputString)
+        //{
+        //    DateTime myDate;
+        //    if (timestamp_string.Split(' ').Length == 2)
+        //    {
+        //        //String has Date and Time
+        //        return true;
+        //    }
+        //    else
+        //    {
+        //        //String has only Date Portion    
+        //        return false;
+        //    }
+        //}
         private async Task BookingFormComplete(IDialogContext context, IAwaitable<BookingForm> result)
         {
             try
@@ -169,7 +201,7 @@ namespace RestaurantBot
             if (bookingform.Time != null)
             {
                 // Time stated separately
-                var time = bookingform.Time.GetValueOrDefault();
+                var time = bookingform.Time/*.GetValueOrDefault()*/;
                 booking.BookingDateTime = bookingform.Date.Date + time.TimeOfDay;
             }
             else
