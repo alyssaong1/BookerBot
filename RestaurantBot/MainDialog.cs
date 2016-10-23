@@ -120,20 +120,6 @@ namespace RestaurantBot
                 result.TryFindEntity("builtin.datetime.date", out entityDate);
                 result.TryFindEntity("builtin.datetime.time", out entityTime);
 
-                //if (entityDate != null)
-                //{
-                //    if (HasExplicitTime(entityDate.Entity)) // User stated date and time
-                //    {
-                //        entities.Add(new EntityRecommendation(type: "Date") { Entity = entityDate.Entity.Replace(". ", ".") });
-                //    } else // User only stated date
-                //    {
-                //        entities.Add(new EntityRecommendation(type: "Date") { Entity = entityDate.Entity });
-                //    }
-                //} else if (entityTime != null)
-                //{
-                //    entities.Add(new EntityRecommendation(type: "Time") { Entity = entityTime.Entity });
-                //}
-
                 if ((entityDate != null) & (entityTime != null))
                 {
                     entities.Add(new EntityRecommendation(type: "Date") { Entity = entityDate.Entity });
@@ -145,7 +131,8 @@ namespace RestaurantBot
                 }
                 else if (entityTime != null)
                 { 
-                    entities.Add(new EntityRecommendation(type: "Time") { Entity = entityTime.Entity });
+                    // I use resolution instead of entity for time, because things like 9.30pm don't work with entity (it's an issue with LUIS atm)
+                    entities.Add(new EntityRecommendation(type: "Time") { Entity = entityTime.Resolution["time"].Substring(1) });
                 }
                 await context.PostAsync("Sure thing - I'll need some details from you.");
                 var bookingForm = new FormDialog<BookingForm>(new BookingForm(), BookingForm.BuildForm, FormOptions.PromptInStart, entities);
@@ -157,20 +144,6 @@ namespace RestaurantBot
                 context.Wait(MessageReceived);
             }
         }
-        //private Boolean HasExplicitTime(string inputString)
-        //{
-        //    DateTime myDate;
-        //    if (timestamp_string.Split(' ').Length == 2)
-        //    {
-        //        //String has Date and Time
-        //        return true;
-        //    }
-        //    else
-        //    {
-        //        //String has only Date Portion    
-        //        return false;
-        //    }
-        //}
         private async Task BookingFormComplete(IDialogContext context, IAwaitable<BookingForm> result)
         {
             try
@@ -202,7 +175,7 @@ namespace RestaurantBot
             {
                 // Time stated separately
                 var time = bookingform.Time/*.GetValueOrDefault()*/;
-                booking.BookingDateTime = bookingform.Date.Date + time.TimeOfDay;
+                booking.BookingDateTime = bookingform.Date.Date.Add(time.TimeOfDay);
             }
             else
             {

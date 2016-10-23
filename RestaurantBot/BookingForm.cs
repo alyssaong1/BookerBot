@@ -11,10 +11,10 @@ namespace RestaurantBot
     [Serializable]
     public class BookingForm
     {
-        [Prompt("What day and time would you like to make a booking for? Remember to specify am or pm.")]
+        [Prompt("What date would you like to make a booking for?")]
         public DateTime Date { get; set; }
         // Don't forget to make datetime nullable if it's optional!
-        [Prompt("What is your preferred time?")]
+        [Prompt("What is your preferred time? Please use HH:mm format e.g. 10.30pm would be 22:30")]
         //[Optional]
         public DateTime Time { get; set; }
         [Prompt("Your name?")]
