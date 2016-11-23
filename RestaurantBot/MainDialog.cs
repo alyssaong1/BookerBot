@@ -14,6 +14,7 @@ using System.Web;
 
 namespace RestaurantBot
 {
+    // I just left these in so you can plug and play
     [LuisModel("e2fb5dc3-8e97-4d8c-a068-54d38c6545e4", "f017f470eff645c898f139b24dc3948c")]
     [Serializable]
     public class MainDialog : LuisDialog<Object>
