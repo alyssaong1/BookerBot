@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -18,11 +19,36 @@ namespace RestaurantBot
     public class MainDialog : LuisDialog<Object>
     {
         [LuisIntent("None")]
-        [LuisIntent("")]
+        //[LuisIntent("")]
         public async Task None(IDialogContext context, LuisResult result)
         {
-            await context.PostAsync("I'm not sure what you want.");
-            context.Wait(MessageReceived);
+            try
+            {
+                var userMsg = result.Query;
+                // Do some basic keyword checking
+                if (Regex.IsMatch(userMsg, @"\b(hello|hi|hey)\b", RegexOptions.IgnoreCase))
+                {
+                    await context.PostAsync("Hey there! I can help you make bookings and ask me stuff like where our restaurant is and our operating hours.");
+                }
+                else if (Regex.IsMatch(userMsg, @"\b(thank|thanks)\b", RegexOptions.IgnoreCase))
+                {
+                    await context.PostAsync("You're welcome.");
+                }
+                else if (Regex.IsMatch(userMsg, @"\b(bye|goodbye)\b", RegexOptions.IgnoreCase))
+                {
+                    await context.PostAsync("Okay, bye for now.");
+                }
+                else
+                {
+                    await context.PostAsync("Hmm I'm not sure what you want. Still learning, sorry!");
+                }
+            } catch (Exception)
+            {
+                await context.PostAsync("Argh something went wrong :( Sorry about that.");
+            } finally
+            {
+                context.Wait(MessageReceived);
+            }
         }
         [LuisIntent("ViewMenu")]
         public async Task ViewMenu(IDialogContext context, IAwaitable<IMessageActivity> activity, LuisResult result)
@@ -40,7 +66,7 @@ namespace RestaurantBot
                     };
                     await context.PostAsync(reply);
                 }
-                else if (message.ChannelId == "telegram")
+                else
                 {
                     // The Attachments property allows you to send and receive images and other content
                     reply.Attachments = new List<Attachment>()
@@ -54,10 +80,6 @@ namespace RestaurantBot
                     };
                     await context.PostAsync("Here's our full menu: ");
                     await context.PostAsync(reply);
-                }
-                else
-                {
-                    await context.PostAsync("Show menu in other channels");
                 }
             }
             catch (Exception)
@@ -89,7 +111,7 @@ namespace RestaurantBot
                                     Type = "web_url",
                                     Url = "http://nandosmexicancafe.com/menu-2/",
                                     Title = "All food items",
-                                    WebViewRatio = "compact"
+                                    WebViewRatio = "tall"
                                 },
                                 new FbButton()
                                 {
@@ -123,7 +145,7 @@ namespace RestaurantBot
                 if ((entityDate != null) & (entityTime != null))
                 {
                     entities.Add(new EntityRecommendation(type: "Date") { Entity = entityDate.Entity });
-                    entities.Add(new EntityRecommendation(type: "Time") { Entity = entityTime.Resolution["time"].Substring(1) });
+                    entities.Add(new EntityRecommendation(type: "Time") { Entity = entityTime.Entity });
                 }
                 else if (entityDate != null)
                 {
@@ -132,7 +154,7 @@ namespace RestaurantBot
                 else if (entityTime != null)
                 { 
                     // I use resolution instead of entity for time, because things like 9.30pm don't work with entity (it's an issue with LUIS atm)
-                    entities.Add(new EntityRecommendation(type: "Time") { Entity = entityTime.Resolution["time"].Substring(1) });
+                    entities.Add(new EntityRecommendation(type: "Time") { Entity = entityTime.Entity });
                 }
                 await context.PostAsync("Sure thing - I'll need some details from you.");
                 var bookingForm = new FormDialog<BookingForm>(new BookingForm(), BookingForm.BuildForm, FormOptions.PromptInStart, entities);
@@ -250,6 +272,50 @@ namespace RestaurantBot
                 await context.PostAsync("Something went wrong, sorry :(");
             }
             finally
+            {
+                context.Wait(MessageReceived);
+            }
+        }
+        [LuisIntent("OpeningHours")]
+        public async Task OpeningHours(IDialogContext context, LuisResult result)
+        {
+            try
+            {
+                await context.PostAsync("Here are our opening hours: ");
+                await context.PostAsync("Monday to Friday: 8.00am to 5.00pm \n\n" +
+        "Saturday: 8.00am to 1.00pm \n\n" +
+        "Closed Sunday and Public Holidays");
+            } catch (Exception)
+            {
+                await context.PostAsync("Something went wrong, sorry :(");
+            } finally
+            {
+                context.Wait(MessageReceived);
+            }
+        }
+        [LuisIntent("GetLocation")]
+        public async Task GetLocation(IDialogContext context, LuisResult result)
+        {
+            try
+            {
+                await context.PostAsync("Here is our address and a map for your reference:");
+                await context.PostAsync("22 Boon Keng Road, #01-01, Singapore 330022");
+                var reply = context.MakeMessage();
+                reply.Attachments = new List<Attachment>()
+                    {
+                        new Attachment()
+                        {
+                            ContentUrl = "http://i.imgur.com/yVDNd7J.jpg",
+                            ContentType = "image/jpg",
+                            Name = "Map.jpg"
+                        }
+                    };
+                await context.PostAsync(reply);
+            }
+            catch (Exception)
+            {
+                await context.PostAsync("Something went wrong, sorry :(");
+            } finally
             {
                 context.Wait(MessageReceived);
             }
